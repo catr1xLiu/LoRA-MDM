@@ -145,9 +145,35 @@ class StyleMotionDataset(Dataset):
         self.name_list = name_list
         
         # Initialize ages for each item
-        self.ages = {}
-        for name in self.name_list:
-            self.ages[name] = random.uniform(0.18, 0.90)
+        # import pickle
+
+        # self.ages = {}
+        # velocity_cache_path = "./velocity_age_cache/100style_velocity_ages.pkl"
+        # if os.path.exists(velocity_cache_path):
+        #     print(f"[Age] Loading velocity-based ages from: {velocity_cache_path}")
+        #     with open(velocity_cache_path, 'rb') as f:
+        #         cache_data = pickle.load(f)
+        #     
+        #     cached_ages = cache_data['ages']
+        #     cached_stats = cache_data['stats']
+        # 
+        #     for name in self.name_list:
+        #         if name in cached_ages:
+        #             self.ages[name] = cached_ages[name]
+        #         else:
+        #             # Fallback: compute on the fly
+        #             motion = self.data_dict[name]['motion']
+        #             vel = np.sqrt(motion[:, 1]**2 + motion[:, 2]**2).mean()
+        #             self.ages[name] = 0.90 - (vel - cached_stats['min_vel']) / \
+        #                               (cached_stats['max_vel'] - cached_stats['min_vel']) * 0.72
+        # 
+        #     # Print summary
+        #     age_vals = np.array(list(self.ages.values()))
+        #     print(f"[Age] Loaded velocity-based ages: mean={age_vals.mean():.3f}, std={age_vals.std():.3f}")
+        # else:
+        #     print("[Age] WARNING: Cache not found, using random ages (THIS WON'T LEARN!)")
+        #     for name in self.name_list:
+        #         self.ages[name] = random.uniform(0.18, 0.90)
     
     def reset_max_len(self, length):
         assert length <= self.max_motion_length
@@ -197,7 +223,7 @@ class StyleMotionDataset(Dataset):
                                      np.zeros((self.max_motion_length - m_length, motion.shape[1]))
                                      ], axis=0)
 
-        age = self.ages[self.name_list[idx]]
+        # age = self.ages[self.name_list[idx]]
         return {
             "inp": torch.tensor(motion.T).float().unsqueeze(1), # [seqlen, J] -> [J, 1, seqlen]
             "action":torch.tensor(int(label)),
@@ -206,7 +232,7 @@ class StyleMotionDataset(Dataset):
             "style": style,
             "action_text": motion_type,
             "cut_idx": cut_idx,
-            "age": age,
+            # "age": age,
         }
         
 

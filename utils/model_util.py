@@ -6,15 +6,24 @@ from diffusion.respace import SpacedDiffusion, space_timesteps
 from utils.parser_util import get_cond_mode
 import os
 
+
+# def load_model_wo_clip(model, state_dict):
+#     # assert (state_dict['sequence_pos_encoder.pe'][:model.sequence_pos_encoder.pe.shape[0]] == model.sequence_pos_encoder.pe).all()  # TEST
+#     # assert (state_dict['embed_timestep.sequence_pos_encoder.pe'][:model.embed_timestep.sequence_pos_encoder.pe.shape[0]] == model.embed_timestep.sequence_pos_encoder.pe).all()  # TEST
+#     del state_dict['sequence_pos_encoder.pe']  # no need to load it (fixed), and causes size mismatch for older models
+#     del state_dict['embed_timestep.sequence_pos_encoder.pe']  # no need to load it (fixed), and causes size mismatch for older models
+#     missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+#     assert len(unexpected_keys) == 0
+#     assert all([k.startswith('clip_model.') or 'sequence_pos_encoder' in k  or 'q_zero' in k or 'embed_age' in k for k in missing_keys])
+
 def load_model_wo_clip(model, state_dict):
-    # assert (state_dict['sequence_pos_encoder.pe'][:model.sequence_pos_encoder.pe.shape[0]] == model.sequence_pos_encoder.pe).all()  # TEST
-    # assert (state_dict['embed_timestep.sequence_pos_encoder.pe'][:model.embed_timestep.sequence_pos_encoder.pe.shape[0]] == model.embed_timestep.sequence_pos_encoder.pe).all()  # TEST
-    del state_dict['sequence_pos_encoder.pe']  # no need to load it (fixed), and causes size mismatch for older models
-    del state_dict['embed_timestep.sequence_pos_encoder.pe']  # no need to load it (fixed), and causes size mismatch for older models
+    # Use .pop(key, None) to safely remove keys if they exist, without crashing if they don't
+    state_dict.pop('sequence_pos_encoder.pe', None)
+    state_dict.pop('embed_timestep.sequence_pos_encoder.pe', None)
+    
     missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
     assert len(unexpected_keys) == 0
     assert all([k.startswith('clip_model.') or 'sequence_pos_encoder' in k  or 'q_zero' in k or 'embed_age' in k for k in missing_keys])
-
 
 
 def create_model_and_diffusion(args, data, ModelClass=MDM, DiffusionClass=SpacedDiffusion):
@@ -39,7 +48,7 @@ def get_model_args(args, data):
     njoints = 25
     nfeats = 6
 
-    if args.dataset in ['humanml', '100style']:
+    if args.dataset in ['humanml', '100style', 'van_criekinge']:
         data_rep = 'hml_vec'
         njoints = 263
         nfeats = 1

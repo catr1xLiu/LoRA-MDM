@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from data_loaders.humanml_utils import get_inpainting_mask
 from data_loaders.tensors import collate as all_collate
 from data_loaders.tensors import t2m_collate
+from data_loaders.age.dataset import AgeMotionDataset
 
 def get_dataset_class(name):
     if name == "amass":
@@ -23,6 +24,8 @@ def get_dataset_class(name):
     elif name == "100style":
         from data_loaders.style.dataset import StyleMotionDataset
         return StyleMotionDataset
+    elif name == "van_criekinge":
+        return AgeMotionDataset
     else:
         raise ValueError(f'Unsupported dataset name [{name}]')
 
@@ -42,6 +45,8 @@ def get_dataset(name, num_frames, split='train', hml_mode='train', styles=None, 
         dataset = DATA(split=split, num_frames=num_frames, mode=hml_mode)
     elif name == "100style":
         dataset = DATA(styles, split,motion_type_to_exclude=motion_type_to_exclude)
+    elif name == "van_criekinge":
+        dataset = DATA(data_root = "./dataset/VanCriekinge", split=split, max_motion_length=num_frames)
     else:
         dataset = DATA(split=split, num_frames=num_frames)
     return dataset
@@ -53,13 +58,18 @@ def get_dataset_loader(name, batch_size, num_frames, split='train', hml_mode='tr
     drop_last = name == "humanml"
     loader = DataLoader(
         dataset, batch_size=batch_size, shuffle=True,
-        num_workers=2, drop_last=drop_last, collate_fn=collate, pin_memory=True
+        num_workers=0, drop_last=drop_last, collate_fn=collate, pin_memory=True
     )
     return loader
 
 def get_prior_dataset_loader(batch_size, num_frames):
     from data_loaders.humanml.data.dataset import HumanML3D
     data = HumanML3D(split='train', num_frames=num_frames, mode='train')
+
+    if hasattr(data, 't2m_dataset'):
+        data.t2m_dataset.max_motion_length = num_frames
+        data.t2m_dataset.reset_max_len(num_frames)
+
     collate = get_collate_fn('humanml', 'train')
    
     loader = DataLoader(

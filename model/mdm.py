@@ -148,7 +148,7 @@ class MDM(nn.Module):
         assert self.lora_fintune
         print("LoRAing MDM")
         for n, p in self.named_parameters():
-            if 'lora' not in n and 'age_encoder' not in n:
+            if 'lora' not in n and 'embed_age' not in n:
                 p.requires_grad = False
         
         from lora_pytorch import LoRA
@@ -285,10 +285,38 @@ class MDM(nn.Module):
                 else:
                     output = output[1:]
             else:
+                # FIX: Concatenate age embedding to the memory sequence so the decoder can attend to it
+                if 'age' in self.cond_mode:
+                    # emb is [1, bs, d], age_emb is [1, bs, d]
+                    # memory becomes [2, bs, d]
+                    mem = torch.cat((emb, age_emb), axis=0)
+                else:
+                    mem = emb
+
                 if self.text_encoder_type == 'clip':
-                    output = self.seqTransDecoder(xseq, memory=emb, tgt_key_padding_mask=frames_mask)
+                    output = self.seqTransDecoder(xseq, memory=mem, tgt_key_padding_mask=frames_mask)
                 elif self.text_encoder_type == 'bert':
-                    output = self.seqTransDecoder(xseq, memory=emb, memory_key_padding_mask=text_mask, tgt_key_padding_mask=frames_mask)  # Rotem's bug fix
+                    # NOTE: If using BERT, text_mask handles the padding for the text tokens. 
+                    # If we prepend/append age, we technically need to adjust the mask size, 
+                    # but since age is always present (not padded), we can likely get away 
+                    # with broadcasting or just ensuring the mask matches the memory shape.
+                    # For now, let's assume the mask logic inside seqTransDecoder handles the memory shape change 
+                    # (it usually masks the Key, which is now larger).
+                    
+                    # If text_mask is provided, we need to pad it to account for the extra age token
+                    if text_mask is not None and 'age' in self.cond_mode:
+                        # text_mask is [bs, text_len]. We need [bs, text_len + 1]
+                        # False means "attend", True means "ignore" (usually) - check your specific BERT implementation
+                        # In standard PyTorch MultiheadAttention, key_padding_mask=True means IGNORE.
+                        # Your BERT implementation returns mask where True = "no token there" (ignore).
+                        
+                        # Add a "False" (don't ignore) column for the age token
+                        age_mask = torch.zeros((text_mask.shape[0], 1), dtype=torch.bool, device=text_mask.device)
+                        mem_mask = torch.cat((text_mask, age_mask), dim=1)
+                    else:
+                        mem_mask = text_mask
+
+                    output = self.seqTransDecoder(xseq, memory=mem, memory_key_padding_mask=mem_mask, tgt_key_padding_mask=frames_mask)
                 else:
                     raise ValueError
         elif self.arch == 'gru':

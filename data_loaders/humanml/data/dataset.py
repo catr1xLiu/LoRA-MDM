@@ -121,9 +121,25 @@ class Text2MotionDataset(data.Dataset):
         self.name_list = name_list
         
         # Initialize ages for each item
-        self.ages = {}
-        for name in self.name_list:
-            self.ages[name] = random.uniform(0.18, 0.90)
+        # import pickle
+
+        # self.ages = {}
+        # velocity_cache_path = "./velocity_age_cache/humanml_velocity_ages.pkl"
+
+        # if os.path.exists(velocity_cache_path):
+        #     print(f"[Age] Loading velocity-based ages from: {velocity_cache_path}")
+        #     with open(velocity_cache_path, 'rb') as f:
+        #         cache_data = pickle.load(f)
+        # 
+        #     for name in self.name_list:
+        #         if name in cache_data['ages']:
+        #             self.ages[name] = cache_data['ages'][name]
+        #         else:
+        #             self.ages[name] = 0.54  # Default to middle age
+        # else:
+        #     print("[Age] WARNING: HumanML3D cache not found, using random ages")
+        #     for name in self.name_list:
+        #         self.ages[name] = random.uniform(0.18, 0.9)
         self.reset_max_len(self.max_length)
 
     def reset_max_len(self, length):
@@ -203,7 +219,8 @@ class Text2MotionDataset(data.Dataset):
         "Z Normalization"
         motion = (motion - self.mean) / self.std
 
-        age = self.ages[self.name_list[idx]]
+        # age = self.ages[self.name_list[idx]]
+        age = 0.25
         return word_embeddings, pos_one_hots, caption, sent_len, motion, m_length, age
 
 
@@ -296,9 +313,9 @@ class Text2MotionDatasetV2(data.Dataset):
         self.name_list = name_list
         
         # Initialize ages for each item
-        self.ages = {}
-        for name in self.name_list:
-            self.ages[name] = random.uniform(0.18, 0.90)
+        # self.ages = {}
+        # for name in self.name_list:
+        #     self.ages[name] = random.uniform(0.18, 0.90)
         self.reset_max_len(self.max_length)
 
     def reset_max_len(self, length):
@@ -362,7 +379,8 @@ class Text2MotionDatasetV2(data.Dataset):
                                      ], axis=0)
         # print(word_embeddings.shape, motion.shape)
         # print(tokens)
-        age = self.ages[self.name_list[idx]]
+        # age = self.ages[self.name_list[idx]]
+        age = 0.25
         return word_embeddings, pos_one_hots, caption, sent_len, motion, m_length, '_'.join(tokens), age
 
 

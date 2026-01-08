@@ -54,7 +54,7 @@ def collate(batch):
 
     if 'age' in notnone_batches[0]:
         agebatch = [b['age'] for b in notnone_batches]
-        cond['y'].update({'age': torch.as_tensor(agebatch).unsqueeze(1)})
+        cond['y'].update({'age': torch.as_tensor(agebatch, dtype=torch.float32).unsqueeze(1)})
     
     return motion, cond
 

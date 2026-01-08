@@ -83,7 +83,7 @@ def main(args=None):
     args.batch_size = args.num_samples  # Sampling a single batch from the testset, with exactly args.num_samples
 
     print('Loading dataset...')
-    style_data = load_dataset(args, max_frames, n_frames, styles=tuple(args.styles))
+    style_data = load_dataset(args, max_frames, n_frames, styles=tuple(args.styles) if args.styles is not None else None)
 
     total_num_samples = args.num_samples * args.num_repetitions
 
@@ -98,8 +98,10 @@ def main(args=None):
         model.add_LoRA_adapters()
         if args.lora_path is not None:
             load_lora_to_model(model, args.lora_path, use_avg=args.use_ema)
-        else:
+        elif args.styles is not None and len(args.styles) > 0:
             load_lora_to_model(model, args.styles[0], use_avg=args.use_ema)
+        else:
+            raise ValueError("When using lora_finetune, either --lora_path or --styles must be provided")
 
         
     if args.guidance_param != 1:
@@ -319,7 +321,7 @@ def load_dataset(args, max_frames, n_frames, styles=None):
                               num_frames=max_frames,
                               split='test',
                               hml_mode='text_only',
-                              styles=tuple(styles))
+                              styles=tuple(styles) if styles is not None else None)
     data.fixed_length = n_frames
     return data
 

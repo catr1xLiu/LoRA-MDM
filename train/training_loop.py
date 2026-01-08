@@ -214,6 +214,9 @@ class TrainLoop:
                         prior_motion = prior_motion[:n]
                         prior_cond['y']['text'] = prior_cond['y']['text'][:n]
                         prior_cond['y']['mask'] = prior_cond['y']['mask'][:n]
+                        # FIX: Slice age if it exists
+                        if 'age' in prior_cond['y']:
+                            prior_cond['y']['age'] = prior_cond['y']['age'][:n]
                         
                     cond['y']['x_pr_start'] = prior_motion
                     cond['y']['x_pr_text'] = prior_cond['y']['text']
