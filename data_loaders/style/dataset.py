@@ -143,6 +143,11 @@ class StyleMotionDataset(Dataset):
         self.data_dict = data_dict
         self.nfeats = motion.shape[1]
         self.name_list = name_list
+        
+        # Initialize ages for each item
+        self.ages = {}
+        for name in self.name_list:
+            self.ages[name] = random.uniform(0.18, 0.90)
     
     def reset_max_len(self, length):
         assert length <= self.max_motion_length
@@ -181,8 +186,8 @@ class StyleMotionDataset(Dataset):
         caption = f'A person is {movement} in {style_token} style.'
 
         m_length = min(196, m_length)
-        idx = random.randint(0, len(motion) - m_length)
-        motion = motion[idx:idx + m_length]
+        frame_idx = random.randint(0, len(motion) - m_length)
+        motion = motion[frame_idx:frame_idx + m_length]
         
         "Z Normalization"
         motion = (motion - self.mean) / self.std
@@ -192,6 +197,7 @@ class StyleMotionDataset(Dataset):
                                      np.zeros((self.max_motion_length - m_length, motion.shape[1]))
                                      ], axis=0)
 
+        age = self.ages[self.name_list[idx]]
         return {
             "inp": torch.tensor(motion.T).float().unsqueeze(1), # [seqlen, J] -> [J, 1, seqlen]
             "action":torch.tensor(int(label)),
@@ -200,6 +206,7 @@ class StyleMotionDataset(Dataset):
             "style": style,
             "action_text": motion_type,
             "cut_idx": cut_idx,
+            "age": age,
         }
         
 

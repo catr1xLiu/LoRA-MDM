@@ -120,6 +120,10 @@ class MDM(nn.Module):
                 self.embed_action = EmbedAction(self.num_actions, self.latent_dim)
                 print('EMBED ACTION')
 
+            if 'age' in self.cond_mode:
+                self.embed_age = AgeEncoder(self.latent_dim)
+                print("EMBED AGE")
+
         self.output_process = OutputProcess(self.data_rep, self.input_feats, self.latent_dim, self.njoints,
                                             self.nfeats)
         self.rot2xyz = Rotation2xyz(device='cpu', dataset=self.dataset)
@@ -144,7 +148,7 @@ class MDM(nn.Module):
         assert self.lora_fintune
         print("LoRAing MDM")
         for n, p in self.named_parameters():
-            if 'lora' not in n:
+            if 'lora' not in n and 'age_encoder' not in n:
                 p.requires_grad = False
         
         from lora_pytorch import LoRA
@@ -225,6 +229,10 @@ class MDM(nn.Module):
         if 'action' in self.cond_mode:
             action_emb = self.embed_action(y['action'])
             emb += self.mask_cond(action_emb, force_mask=force_mask)
+        if 'age' in self.cond_mode:
+            age_emb = self.embed_age(y['age'].to(x.device))
+            age_emb = age_emb.unsqueeze(0)
+            age_emb = self.mask_cond(age_emb, force_mask = force_mask)
 
         if self.arch == 'gru':
             x_reshaped = x.reshape(bs, njoints*nfeats, 1, nframes)
@@ -241,23 +249,41 @@ class MDM(nn.Module):
         if self.mask_frames and is_valid_mask:
             frames_mask = torch.logical_not(y['mask'][..., :x.shape[0]].squeeze(1).squeeze(1)).to(device=x.device)
             if self.emb_trans_dec or self.arch == 'trans_enc':
-                step_mask = torch.zeros((bs, 1), dtype=torch.bool, device=x.device)
+                step_mask_len = 1
+                if 'age' in self.cond_mode:
+                    step_mask_len += 1
+                step_mask = torch.zeros((bs, step_mask_len), dtype=torch.bool, device=x.device)
                 frames_mask = torch.cat([step_mask, frames_mask], dim=1)
 
         if self.arch == 'trans_enc':
+            if 'age' in self.cond_mode:
+                xseq = torch.cat((emb, age_emb, x), axis=0)
+            else:
+                xseq = torch.cat((emb, x), axis = 0)
             # adding the timestep embed
-            xseq = torch.cat((emb, x), axis=0)  # [seqlen+1, bs, d]
+            # xseq = torch.cat((emb, x), axis=0)  # [seqlen+1, bs, d]
             xseq = self.sequence_pos_encoder(xseq)  # [seqlen+1, bs, d]
             output = self.seqTransEncoder(xseq, src_key_padding_mask=frames_mask)[1:]  # , src_key_padding_mask=~maskseq)  # [seqlen, bs, d]
+            if 'age' in self.cond_mode:
+                output = output[2:]
+            else:
+                output = output[1:]
 
         elif self.arch == 'trans_dec':
             if self.emb_trans_dec:
-                xseq = torch.cat((emb, x), axis=0)
+                if 'age' in self.cond_mode:
+                    xseq = torch.cat((emb, age_emb, x), axis = 0)
+                else:
+                    xseq = torch.cat((emb, x), axis=0)
             else:
                 xseq = x
             xseq = self.sequence_pos_encoder(xseq)  # [seqlen+1, bs, d]
             if self.emb_trans_dec:
                 output = self.seqTransDecoder(xseq, memory=emb, tgt_key_padding_mask=frames_mask)[1:] # [seqlen, bs, d] # Rotem's bug fix # FIXME - maybe add a causal mask
+                if 'age' in self.cond_mode:
+                    output = output[2:]
+                else:
+                    output = output[1:]
             else:
                 if self.text_encoder_type == 'clip':
                     output = self.seqTransDecoder(xseq, memory=emb, tgt_key_padding_mask=frames_mask)
@@ -386,3 +412,14 @@ class EmbedAction(nn.Module):
         idx = input[:, 0].to(torch.long)  # an index array must be long
         output = self.action_embedding[idx]
         return output
+
+class AgeEncoder(nn.Module):
+    def __init__(self, latent_dim):
+        super().__init__()
+        self.fc = nn.Sequential(
+            nn.Linear(1, latent_dim),
+            nn.SiLU(),
+            nn.Linear(latent_dim, latent_dim),
+        )
+    def forward(self, age):
+        return self.fc(age)

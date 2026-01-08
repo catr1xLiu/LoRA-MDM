@@ -112,7 +112,10 @@ def main(args=None):
         iterator = iter(style_data)
         _, model_kwargs = next(iterator)
     else:
-        collate_args = [{'inp': torch.zeros(n_frames), 'tokens': None, 'lengths': n_frames}] * args.num_samples
+        if args.age < 0:
+            raise ValueError('Age cannot be negative')
+        age = min(args.age, 100) / 100.0
+        collate_args = [{'inp': torch.zeros(n_frames), 'tokens': None, 'lengths': n_frames, 'age': age}] * args.num_samples
         is_t2m = any([args.input_text, args.text_prompt])
         if is_t2m:
             # t2m

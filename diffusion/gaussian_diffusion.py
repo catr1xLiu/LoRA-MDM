@@ -1410,6 +1410,8 @@ class GaussianDiffusion:
                                          'mask':  model_kwargs['y']['x_pr_mask'],
                                          }
                                     }
+                if 'x_pr_age' in model_kwargs['y']:
+                    model_pr_kwargs['y']['age'] = model_kwargs['y']['x_pr_age']
                 
                 model_pr_output = model(x_pr_t, self._scale_timesteps(t), **model_pr_kwargs)
                 pr_target = {

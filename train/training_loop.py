@@ -20,7 +20,7 @@ from diffusion.resample import LossAwareSampler, UniformSampler
 from tqdm import tqdm
 from diffusion.resample import create_named_schedule_sampler
 from data_loaders.humanml.networks.evaluator_wrapper import EvaluatorMDMWrapper
-from eval import eval_humanml, eval_humanact12_uestc
+from eval import eval_humanml
 from sample.generate import main as generate
 from data_loaders.get_data import get_dataset_loader
 from utils.model_util import load_model_wo_clip
@@ -218,6 +218,8 @@ class TrainLoop:
                     cond['y']['x_pr_start'] = prior_motion
                     cond['y']['x_pr_text'] = prior_cond['y']['text']
                     cond['y']['x_pr_mask'] = prior_cond['y']['mask']
+                    if 'age' in prior_cond['y']:
+                        cond['y']['x_pr_age'] = prior_cond['y']['age']
                     
                     motion = motion.to(self.device)
                     cond['y'] = {key: val.to(self.device) if torch.is_tensor(val) else val for key, val in cond['y'].items()}
@@ -434,7 +436,7 @@ class TrainLoop:
                     
             def only_lora(state_dict):
                 mdm_weights = [
-                    e for e in state_dict.keys() if 'lora' not in e
+                    e for e in state_dict.keys() if 'lora' not in e and 'age' not in e
                 ]
                 for e in mdm_weights:
                     del state_dict[e]
