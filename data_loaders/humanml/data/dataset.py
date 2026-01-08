@@ -119,6 +119,11 @@ class Text2MotionDataset(data.Dataset):
         self.length_arr = np.array(length_list)
         self.data_dict = data_dict
         self.name_list = name_list
+        
+        # Initialize ages for each item
+        self.ages = {}
+        for name in self.name_list:
+            self.ages[name] = random.uniform(0.18, 0.90)
         self.reset_max_len(self.max_length)
 
     def reset_max_len(self, length):
@@ -171,15 +176,15 @@ class Text2MotionDataset(data.Dataset):
                     coin2 = 'single'
                 if len_gap == 0 or (len_gap == 1 and coin2 == 'double'):
                     m_length = self.max_length
-                    idx = random.randint(0, m_length - self.max_length)
-                    motion = motion[idx:idx+self.max_length]
+                    frame_idx = random.randint(0, m_length - self.max_length)
+                    motion = motion[frame_idx:frame_idx+self.max_length]
                 else:
                     if coin2 == 'single':
                         n_m_length = self.max_length + self.opt.unit_length * len_gap
                     else:
                         n_m_length = self.max_length + self.opt.unit_length * (len_gap - 1)
-                    idx = random.randint(0, m_length - n_m_length)
-                    motion = motion[idx:idx + self.max_length]
+                    frame_idx = random.randint(0, m_length - n_m_length)
+                    motion = motion[frame_idx:frame_idx + self.max_length]
                     m_length = n_m_length
                 # print(len_gap, idx, coin2)
         else:
@@ -192,13 +197,14 @@ class Text2MotionDataset(data.Dataset):
                 m_length = (m_length // self.opt.unit_length - 1) * self.opt.unit_length
             elif coin2 == 'single':
                 m_length = (m_length // self.opt.unit_length) * self.opt.unit_length
-            idx = random.randint(0, len(motion) - m_length)
-            motion = motion[idx:idx+m_length]
+            frame_idx = random.randint(0, len(motion) - m_length)
+            motion = motion[frame_idx:frame_idx+m_length]
 
         "Z Normalization"
         motion = (motion - self.mean) / self.std
 
-        return word_embeddings, pos_one_hots, caption, sent_len, motion, m_length
+        age = self.ages[self.name_list[idx]]
+        return word_embeddings, pos_one_hots, caption, sent_len, motion, m_length, age
 
 
 '''For use of training text motion matching model, and evaluations'''
@@ -288,6 +294,11 @@ class Text2MotionDatasetV2(data.Dataset):
         self.length_arr = np.array(length_list)
         self.data_dict = data_dict
         self.name_list = name_list
+        
+        # Initialize ages for each item
+        self.ages = {}
+        for name in self.name_list:
+            self.ages[name] = random.uniform(0.18, 0.90)
         self.reset_max_len(self.max_length)
 
     def reset_max_len(self, length):
@@ -339,8 +350,8 @@ class Text2MotionDatasetV2(data.Dataset):
             m_length = (m_length // self.opt.unit_length - 1) * self.opt.unit_length
         elif coin2 == 'single':
             m_length = (m_length // self.opt.unit_length) * self.opt.unit_length
-        idx = random.randint(0, len(motion) - m_length)
-        motion = motion[idx:idx+m_length]
+        frame_idx = random.randint(0, len(motion) - m_length)
+        motion = motion[frame_idx:frame_idx+m_length]
 
         "Z Normalization"
         motion = (motion - self.mean) / self.std
@@ -351,10 +362,12 @@ class Text2MotionDatasetV2(data.Dataset):
                                      ], axis=0)
         # print(word_embeddings.shape, motion.shape)
         # print(tokens)
-        return word_embeddings, pos_one_hots, caption, sent_len, motion, m_length, '_'.join(tokens)
+        age = self.ages[self.name_list[idx]]
+        return word_embeddings, pos_one_hots, caption, sent_len, motion, m_length, '_'.join(tokens), age
 
 
 '''For use of training baseline'''
+# NOTE: This dataset class is not currently being used in the project
 class Text2MotionDatasetBaseline(data.Dataset):
     def __init__(self, opt, mean, std, split_file, w_vectorizer):
         self.opt = opt

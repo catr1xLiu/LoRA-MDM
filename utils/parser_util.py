@@ -221,6 +221,8 @@ def add_generate_options(parser):
                        help="A text prompt to be generated. If empty, will take text prompts from dataset.")
     group.add_argument("--action_name", default='', type=str,
                        help="An action name to be generated. If empty, will take text prompts from dataset.")
+    group.add_argument("--age", default=30, type=float,
+                       help="Age of the person in the generated motion.")
 
 
 def add_edit_options(parser):
@@ -260,9 +262,9 @@ def get_cond_mode(args):
     if args.unconstrained:
         cond_mode = 'no_cond'
     elif args.dataset in ['kit', 'humanml', '100style']:
-        cond_mode = 'text'
+        cond_mode = 'text,age'
     else:
-        cond_mode = 'action'
+        cond_mode = 'action,age'
     return cond_mode
 
 
@@ -287,9 +289,9 @@ def generate_args():
     args = parse_and_load_from_model(parser)
     cond_mode = get_cond_mode(args)
 
-    if (args.input_text or args.text_prompt) and cond_mode != 'text':
+    if (args.input_text or args.text_prompt) and 'text' not in cond_mode:
         raise Exception('Arguments input_text and text_prompt should not be used for an action condition. Please use action_file or action_name.')
-    elif (args.action_file or args.action_name) and cond_mode != 'action':
+    elif (args.action_file or args.action_name) and 'action' not in cond_mode:
         raise Exception('Arguments action_file and action_name should not be used for a text condition. Please use input_text or text_prompt.')
 
     return args
