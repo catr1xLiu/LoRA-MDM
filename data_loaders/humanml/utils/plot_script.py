@@ -8,10 +8,13 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import mpl_toolkits.mplot3d.axes3d as p3
 # import cv2
 from textwrap import wrap
-from moviepy.editor import VideoClip
-from moviepy.video.io.bindings import mplfig_to_npimage
+from moviepy import VideoClip
+def mplfig_to_npimage(fig):
+    # moviepy's built-in version uses tostring_rgb() which was removed in matplotlib 3.8
+    fig.canvas.draw()
+    buf = fig.canvas.buffer_rgba()
+    return np.asarray(buf)[:, :, :3]
 from data_loaders import humanml_utils
-
 
 def list_cut_average(ll, intervals):
     if intervals == 1:

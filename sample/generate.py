@@ -20,7 +20,7 @@ import data_loaders.humanml.utils.paramUtil as paramUtil
 from data_loaders.humanml.utils.plot_script import plot_3d_motion, plot_3d_motion_with_trajectories
 import shutil
 from data_loaders.tensors import collate
-from moviepy.editor import clips_array
+from moviepy import clips_array
 
 def main(args=None):
     if args is None:
