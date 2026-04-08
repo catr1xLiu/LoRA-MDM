@@ -23,6 +23,9 @@ def get_dataset_class(name):
     elif name == "100style":
         from data_loaders.style.dataset import StyleMotionDataset
         return StyleMotionDataset
+    elif name == "vancriekinge":
+        from data_loaders.vancriekinge.dataset import VanCriekingeDataset
+        return VanCriekingeDataset
     else:
         raise ValueError(f'Unsupported dataset name [{name}]')
 
@@ -40,8 +43,8 @@ def get_dataset(name, num_frames, split='train', hml_mode='train', styles=None, 
     DATA = get_dataset_class(name)
     if name in ["humanml", "kit"]:
         dataset = DATA(split=split, num_frames=num_frames, mode=hml_mode)
-    elif name == "100style":
-        dataset = DATA(styles, split,motion_type_to_exclude=motion_type_to_exclude)
+    elif name in ["100style", "vancriekinge"]:
+        dataset = DATA(styles, split, motion_type_to_exclude=motion_type_to_exclude)
     else:
         dataset = DATA(split=split, num_frames=num_frames)
     return dataset
