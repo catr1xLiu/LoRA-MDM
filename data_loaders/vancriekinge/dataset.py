@@ -24,12 +24,10 @@ HML3D_STATS_DIR = os.path.join(
 
 
 def age_to_group(age: int) -> str:
-    if age < 18:
-        return "Child"
-    if age < 40:
-        return "YoungAdult"
-    if age < 65:
-        return "MiddleAged"
+    if age < 35:
+        return "Young"
+    if age < 60:
+        return "MiddleAge"
     return "Elderly"
 
 
@@ -85,6 +83,7 @@ class VanCriekingeDataset(Dataset):
 
             age_group = age_to_group(meta["age"])
             if age_group not in styles:
+                print("Warning: Skipping %s as its age group %s is not in the specified styles." % (filename, age_group))
                 continue
 
             motion = np.load(os.path.join(MOTION_DIR, filename))
