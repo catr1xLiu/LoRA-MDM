@@ -34,19 +34,19 @@ def get_model_args(args, data):
     else:
         num_actions = 1
 
-    # SMPL defaults
-    data_rep = 'rot6d'
-    njoints = 25
-    nfeats = 6
-
-    if args.dataset in ['humanml', '100style']:
-        data_rep = 'hml_vec'
-        njoints = 263
-        nfeats = 1
-    elif args.dataset == 'kit':
-        data_rep = 'hml_vec'
-        njoints = 251
-        nfeats = 1
+    dataset_model_args = {
+        'humanml':     {'data_rep': 'hml_vec', 'njoints': 263, 'nfeats': 1},
+        '100style':    {'data_rep': 'hml_vec', 'njoints': 263, 'nfeats': 1},
+        'vancriekinge':{'data_rep': 'hml_vec', 'njoints': 263, 'nfeats': 1},
+        'kit':         {'data_rep': 'hml_vec', 'njoints': 251, 'nfeats': 1},
+        'humanact12':  {'data_rep': 'rot6d',   'njoints': 25,  'nfeats': 6},
+        'uestc':       {'data_rep': 'rot6d',   'njoints': 25,  'nfeats': 6},
+    }
+    if args.dataset not in dataset_model_args:
+        raise ValueError(f"Unknown dataset '{args.dataset}'. Expected one of: {list(dataset_model_args.keys())}")
+    data_rep = dataset_model_args[args.dataset]['data_rep']
+    njoints  = dataset_model_args[args.dataset]['njoints']
+    nfeats   = dataset_model_args[args.dataset]['nfeats']
 
     return {'modeltype': '', 'njoints': njoints, 'nfeats': nfeats, 'num_actions': num_actions,
             'translation': True, 'pose_rep': 'rot6d', 'glob': True, 'glob_rot': True,
