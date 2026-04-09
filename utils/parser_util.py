@@ -69,7 +69,7 @@ def add_lora_options(parser):
 
 def add_base_options(parser):
     group = parser.add_argument_group('base')
-    group.add_argument("--cuda", default=True, type=bool, help="Use cuda device, otherwise use CPU.")
+    group.add_argument("--cuda", default=True, type=lambda x: x.lower() not in ('false', '0', 'no'), help="Use cuda device, otherwise use CPU.")
     group.add_argument("--device", default=0, type=int, help="Device id to use.")
     group.add_argument("--seed", default=10, type=int, help="For fixing random seed.")
     group.add_argument("--batch_size", default=200, type=int, help="Batch size during training.")

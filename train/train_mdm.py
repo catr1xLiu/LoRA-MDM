@@ -37,7 +37,7 @@ def main():
     with open(args_path, 'w') as fw:
         json.dump(vars(args), fw, indent=4, sort_keys=True)
 
-    dist_util.setup_dist(args.device)
+    dist_util.setup_dist(args.device if args.cuda else -1)
     
     if args.lora_finetune:
         print("creating style data loader...")
