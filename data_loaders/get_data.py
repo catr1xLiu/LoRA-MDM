@@ -62,7 +62,7 @@ def get_dataset_loader(name, batch_size, num_frames, split='train', hml_mode='tr
 
 def get_prior_dataset_loader(batch_size, num_frames):
     from data_loaders.humanml.data.dataset import HumanML3D
-    data = HumanML3D(split='train', num_frames=num_frames, mode='train')
+    data = HumanML3D(split='train', num_frames=num_frames, mode='train', use_vectorizer=False)
     collate = get_collate_fn('humanml', 'train')
    
     loader = DataLoader(

@@ -320,14 +320,18 @@ class Text2MotionDatasetV2(data.Dataset):
             tokens = tokens[:self.opt.max_text_len]
             tokens = ['sos/OTHER'] + tokens + ['eos/OTHER']
             sent_len = len(tokens)
-        pos_one_hots = []
-        word_embeddings = []
-        for token in tokens:
-            word_emb, pos_oh = self.w_vectorizer[token]
-            pos_one_hots.append(pos_oh[None, :])
-            word_embeddings.append(word_emb[None, :])
-        pos_one_hots = np.concatenate(pos_one_hots, axis=0)
-        word_embeddings = np.concatenate(word_embeddings, axis=0)
+        if self.w_vectorizer is not None:
+            pos_one_hots = []
+            word_embeddings = []
+            for token in tokens:
+                word_emb, pos_oh = self.w_vectorizer[token]
+                pos_one_hots.append(pos_oh[None, :])
+                word_embeddings.append(word_emb[None, :])
+            pos_one_hots = np.concatenate(pos_one_hots, axis=0)
+            word_embeddings = np.concatenate(word_embeddings, axis=0)
+        else:
+            word_embeddings = None
+            pos_one_hots = None
 
         # Crop the motions in to times of 4, and introduce small variations
         if self.opt.unit_length < 10:
@@ -748,6 +752,7 @@ class HumanML3D(data.Dataset):
         opt.save_root = pjoin(abs_base_path, opt.save_root)
         opt.meta_dir = './dataset'
         opt.use_cache = kwargs.get('use_cache', True)
+        use_vectorizer = kwargs.get('use_vectorizer', True)
         self.opt = opt
         print('Loading dataset %s ...' % opt.dataset_name)
 
@@ -757,13 +762,14 @@ class HumanML3D(data.Dataset):
 
         self.t2m_mean = np.load(pjoin('t2m/Comp_v6_KLD01/meta', f'mean.npy'))
         self.t2m_std = np.load(pjoin('t2m/Comp_v6_KLD01/meta', f'std.npy'))
-        
+
         self.split_file = pjoin(opt.data_root, f'{split}.txt')
         if mode == 'text_only':
             self.t2m_dataset = TextOnlyDataset(self.opt, self.mean, self.std, self.split_file)
         else:
-            self.w_vectorizer = WordVectorizer(pjoin(abs_base_path, 'glove'), 'our_vab')
-            self.t2m_dataset = Text2MotionDatasetV2(self.opt, self.mean, self.std, self.split_file, self.w_vectorizer)
+            w_vectorizer = WordVectorizer(pjoin(abs_base_path, 'glove'), 'our_vab') if use_vectorizer else None
+            self.w_vectorizer = w_vectorizer
+            self.t2m_dataset = Text2MotionDatasetV2(self.opt, self.mean, self.std, self.split_file, w_vectorizer)
             self.num_actions = 1 # dummy placeholder
 
         assert len(self.t2m_dataset) > 1, 'You loaded an empty dataset, ' \
