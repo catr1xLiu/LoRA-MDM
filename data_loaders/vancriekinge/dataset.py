@@ -9,12 +9,12 @@ from torch.utils.data import Dataset
 
 METADATA_ROOT = os.path.join(
     os.path.dirname(__file__),
-    "../../../LoRA-MDM-Age-Dataset/data/processed_markers_all_2"
+    "../../dataset/VanCriekinge/metadata"
 )
 
 MOTION_DIR = os.path.join(
     os.path.dirname(__file__),
-    "../../dataset/VanCriekinge"
+    "../../dataset/VanCriekinge/motion"
 )
 
 HML3D_STATS_DIR = os.path.join(
@@ -71,8 +71,9 @@ class VanCriekingeDataset(Dataset):
         for filename in npy_files:
             subject_id, trial_name = parse_filename(filename)
 
-            json_path = os.path.join(METADATA_ROOT, subject_id, f"{trial_name}_metadata.json")
+            json_path = os.path.join(METADATA_ROOT, f"{trial_name}_metadata.json")
             if not os.path.exists(json_path):
+                print("Warning: Skipping %s as no metadata json file found in %s." % (filename, json_path))
                 continue
 
             with open(json_path, "r") as f:
@@ -88,6 +89,7 @@ class VanCriekingeDataset(Dataset):
 
             motion = np.load(os.path.join(MOTION_DIR, filename))
             if len(motion) < self.min_motion_length:
+                print("Info: Skipping %s as its frame length %s is under the minimum threshold (%s frames)." % (filename, len(motion), self.min_motion_length))
                 continue
 
             token = self.tokens[self.styles.index(age_group)]
