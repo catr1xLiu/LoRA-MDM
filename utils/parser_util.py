@@ -185,7 +185,7 @@ def add_sampling_options(parser):
     group.add_argument("--model_path", required=True, type=str,
                        help="Path to model####.pt file to be sampled.")
     group.add_argument("--lora_path", type=str,
-                       help="Path to model####.pt file to be sampled.")
+                       help="Path to LoRA adapter .pt checkpoint. Required when --lora_finetune is set.")
     group.add_argument("--output_dir", default='', type=str,
                        help="Path to results dir (auto created by the script). "
                             "If empty, will create dir in parallel to checkpoint.")
@@ -286,6 +286,9 @@ def generate_args():
     add_generate_options(parser)
     args = parse_and_load_from_model(parser)
     cond_mode = get_cond_mode(args)
+
+    if args.lora_finetune and not args.lora_path:
+        raise ValueError('--lora_path is required when --lora_finetune is set.')
 
     if (args.input_text or args.text_prompt) and cond_mode != 'text':
         raise Exception('Arguments input_text and text_prompt should not be used for an action condition. Please use action_file or action_name.')

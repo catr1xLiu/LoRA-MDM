@@ -68,8 +68,9 @@ class StyleMotionDataset(Dataset):
         dict_path = path + "100STYLE_name_dict.txt"
         motion_to_label = build_dict_from_txt(dict_path)
         
-        mean = np.load(path + "/Mean.npy")
-        std = np.load(path+ "/Std.npy")
+        hml3d_stats_dir = os.path.join(os.path.dirname(__file__), "../../dataset/HumanML3D")
+        mean = np.load(os.path.join(hml3d_stats_dir, "Mean.npy"))
+        std = np.load(os.path.join(hml3d_stats_dir, "Std.npy"))
         new_name_list = []
         length_list = []
         label_list = []
