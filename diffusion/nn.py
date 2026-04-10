@@ -90,6 +90,7 @@ def mean_flat(tensor):
     """
     return tensor.mean(dim=list(range(1, len(tensor.shape))))
 
+
 def sum_flat(tensor):
     """
     Take the sum over all non-batch dimensions.
@@ -147,7 +148,7 @@ def checkpoint(func, inputs, params, flag):
 
 class CheckpointFunction(th.autograd.Function):
     @staticmethod
-    @th.cuda.amp.custom_fwd
+    @th.amp.custom_fwd(device_type="cuda")
     def forward(ctx, run_function, length, *args):
         ctx.run_function = run_function
         ctx.input_length = length
@@ -157,7 +158,7 @@ class CheckpointFunction(th.autograd.Function):
         return output_tensors
 
     @staticmethod
-    @th.cuda.amp.custom_bwd
+    @th.amp.custom_bwd(device_type="cuda")
     def backward(ctx, *output_grads):
         args = list(ctx.saved_tensors)
 
@@ -173,13 +174,15 @@ class CheckpointFunction(th.autograd.Function):
                     # dance. It might not be necessary.
                     args[i] = args[i].detach().requires_grad_()
                     args[i] = args[i].view_as(args[i])
-            output_tensors = ctx.run_function(*args[:ctx.input_length])
+            output_tensors = ctx.run_function(*args[: ctx.input_length])
 
         if isinstance(output_tensors, th.Tensor):
             output_tensors = [output_tensors]
 
         # Filter for outputs that require grad. If none, exit early.
-        out_and_grads = [(o, g) for (o, g) in zip(output_tensors, output_grads) if o.requires_grad]
+        out_and_grads = [
+            (o, g) for (o, g) in zip(output_tensors, output_grads) if o.requires_grad
+        ]
         if not out_and_grads:
             return (None, None) + tuple(None for _ in args)
 
@@ -187,11 +190,11 @@ class CheckpointFunction(th.autograd.Function):
         computed_grads = th.autograd.grad(
             [o for (o, g) in out_and_grads],
             [args[i] for i in input_indices],
-            [g for (o, g) in out_and_grads]
+            [g for (o, g) in out_and_grads],
         )
 
         # Reassemble the complete gradient tuple.
         input_grads = [None for _ in args]
-        for (i, g) in zip(input_indices, computed_grads):
+        for i, g in zip(input_indices, computed_grads):
             input_grads[i] = g
         return (None, None) + tuple(input_grads)
