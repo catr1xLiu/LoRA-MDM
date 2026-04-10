@@ -25,6 +25,13 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 from data_loaders.humanml.scripts.motion_process import recover_from_ric
 
 
+JOINT_NAMES = [
+    'pelvis', 'l_hip', 'r_hip', 'spine1', 'l_knee', 'r_knee',
+    'spine2', 'l_ankle', 'r_ankle', 'spine3', 'l_foot', 'r_foot',
+    'neck', 'l_collar', 'r_collar', 'head', 'l_shoulder', 'r_shoulder',
+    'l_elbow', 'r_elbow', 'l_wrist', 'r_wrist',
+]
+
 BONES = [
     # spine / torso
     (0, 3), (3, 6), (6, 9), (9, 12), (12, 15),
@@ -109,7 +116,7 @@ def auto_load(path, rep_idx):
 
 # ── Animation ────────────────────────────────────────────────────────────────
 
-def animate(npy_path, rep_idx):
+def animate(npy_path, rep_idx, show_labels=False):
     joints, title, fmt = auto_load(npy_path, rep_idx)
     print(f"Format detected: {fmt}  |  Frames: {len(joints)}")
 
@@ -138,6 +145,13 @@ def animate(npy_path, rep_idx):
 
     frame_text = ax.text2D(0.02, 0.95, '', transform=ax.transAxes, fontsize=8)
 
+    label_texts = []
+    if show_labels:
+        pos0 = joints[0]
+        for i, name in enumerate(JOINT_NAMES):
+            t = ax.text(pos0[i, 0], pos0[i, 1], pos0[i, 2], name, fontsize=7, fontweight='bold', color='dimgray')
+            label_texts.append(t)
+
     def update(frame_idx):
         pos = joints[frame_idx]  # [22, 3]
         joint_scatter._offsets3d = (pos[:, 0], pos[:, 1], pos[:, 2])
@@ -145,7 +159,9 @@ def animate(npy_path, rep_idx):
             line.set_data([pos[i, 0], pos[j, 0]], [pos[i, 1], pos[j, 1]])
             line.set_3d_properties([pos[i, 2], pos[j, 2]])
         frame_text.set_text(f'frame {frame_idx + 1}/{T}')
-        return [joint_scatter, frame_text] + bone_lines
+        for t, (x, y, z) in zip(label_texts, pos):
+            t.set_position_3d((x, y, z))
+        return [joint_scatter, frame_text] + bone_lines + label_texts
 
     ani = animation.FuncAnimation(
         fig, update, frames=T, interval=1000 / 20, blit=False
@@ -161,8 +177,10 @@ def main():
                         help='Path to results.npy, a new_joints .npy, or a new_joint_vecs .npy')
     parser.add_argument('--rep', type=int, default=0,
                         help='Repetition index (only used for results.npy format)')
+    parser.add_argument('--labels', action='store_true',
+                        help='Show joint name labels on each joint')
     args = parser.parse_args()
-    animate(args.npy, args.rep)
+    animate(args.npy, args.rep, show_labels=args.labels)
 
 
 if __name__ == '__main__':
