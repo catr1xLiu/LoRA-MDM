@@ -6,21 +6,15 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-
 METADATA_ROOT = os.path.join(
-    os.path.dirname(__file__),
-    "../../dataset/VanCriekinge/metadata"
+    os.path.dirname(__file__), "../../dataset/VanCriekinge/metadata"
 )
 
 MOTION_DIR = os.path.join(
-    os.path.dirname(__file__),
-    "../../dataset/VanCriekinge/motion"
+    os.path.dirname(__file__), "../../dataset/VanCriekinge/motion"
 )
 
-HML3D_STATS_DIR = os.path.join(
-    os.path.dirname(__file__),
-    "../../dataset/HumanML3D"
-)
+HML3D_STATS_DIR = os.path.join(os.path.dirname(__file__), "../../dataset/HumanML3D")
 
 
 def age_to_group(age: int) -> str:
@@ -51,7 +45,7 @@ class VanCriekingeDataset(Dataset):
         del motion_type_to_exclude  # VanCriekinge has only walking; no motion types to exclude
         self.styles = styles
         self.mode = mode
-        self.tokens = ['sks', 'hta', 'oue', 'asar', 'nips']
+        self.tokens = ["sks", "hta", "oue", "asar", "nips"]
         assert len(self.styles) <= len(self.tokens)
 
         self.max_motion_length = 196
@@ -73,7 +67,10 @@ class VanCriekingeDataset(Dataset):
 
             json_path = os.path.join(METADATA_ROOT, f"{trial_name}_metadata.json")
             if not os.path.exists(json_path):
-                print("Warning: Skipping %s as no metadata json file found in %s." % (filename, json_path))
+                print(
+                    "Warning: Skipping %s as no metadata json file found in %s."
+                    % (filename, json_path)
+                )
                 continue
 
             with open(json_path, "r") as f:
@@ -84,12 +81,18 @@ class VanCriekingeDataset(Dataset):
 
             age_group = age_to_group(meta["age"])
             if age_group not in styles:
-                print("Warning: Skipping %s as its age group %s is not in the specified styles." % (filename, age_group))
+                print(
+                    "Warning: Skipping %s as its age group %s is not in the specified styles."
+                    % (filename, age_group)
+                )
                 continue
 
             motion = np.load(os.path.join(MOTION_DIR, filename))
             if len(motion) < self.min_motion_length:
-                print("Info: Skipping %s as its frame length %s is under the minimum threshold (%s frames)." % (filename, len(motion), self.min_motion_length))
+                print(
+                    "Info: Skipping %s as its frame length %s is under the minimum threshold (%s frames)."
+                    % (filename, len(motion), self.min_motion_length)
+                )
                 continue
 
             token = self.tokens[self.styles.index(age_group)]
@@ -160,20 +163,23 @@ class VanCriekingeDataset(Dataset):
 
         m_length = min(self.max_motion_length, m_length)
         start = random.randint(0, len(motion) - m_length)
-        motion = motion[start:start + m_length]
+        motion = motion[start : start + m_length]
 
         motion = (motion - self.mean) / self.std
 
         if m_length < self.max_motion_length:
             motion = np.concatenate(
-                [motion, np.zeros((self.max_motion_length - m_length, motion.shape[1]))],
-                axis=0
+                [
+                    motion,
+                    np.zeros((self.max_motion_length - m_length, motion.shape[1])),
+                ],
+                axis=0,
             )
 
         return {
             "inp": torch.tensor(motion.T).float().unsqueeze(1),  # [263, 1, 196]
             "lengths": m_length,
-            "text": f"A person is walking in {token} style.",
+            "text": f"A person is walking forward in {token} style.",
             "action": torch.tensor(0),
             "action_text": "walking",
             "style": style,
