@@ -19,16 +19,16 @@ class BERT(nn.Module):
         # Tokenizer
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
         # Tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(modelpath)
-        
+        self.tokenizer = AutoTokenizer.from_pretrained(modelpath, local_files_only=True)
+
         if extend_tokens:
             print("Extending tokenizer")
             self.tokenizer.add_tokens(['sks', 'hta', 'oue', 'asar', 'nips'])
-            self.text_model = AutoModel.from_pretrained('save/extended_bert/')
-                                                        
+            self.text_model = AutoModel.from_pretrained('save/extended_bert/', local_files_only=True)
+
         # Text model
         else:
-            self.text_model = AutoModel.from_pretrained(modelpath)
+            self.text_model = AutoModel.from_pretrained(modelpath, local_files_only=True)
             
     def forward(self, texts):
         encoded_inputs = self.tokenizer(texts, return_tensors="pt", padding=True)
