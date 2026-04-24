@@ -121,9 +121,6 @@ def load_saved_model(model, model_path, use_avg: bool=False):  # use_avg_model
     return model
 
 def load_lora_to_model(model, lora_path, use_avg: bool=False):  # use_avg_model
-    if '.pt' not in lora_path:
-        lora_path = find_lora_path(lora_path)
-        
     state_dict = torch.load(lora_path, map_location='cpu')
     # Use average model when possible
 

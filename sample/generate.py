@@ -96,10 +96,7 @@ def main(args=None):
             
     if args.lora_finetune:
         model.add_LoRA_adapters()
-        if args.lora_path is not None:
-            load_lora_to_model(model, args.lora_path, use_avg=args.use_ema)
-        else:
-            load_lora_to_model(model, args.styles[0], use_avg=args.use_ema)
+        load_lora_to_model(model, args.lora_path, use_avg=args.use_ema)
 
         
     if args.guidance_param != 1:
